@@ -155,7 +155,7 @@ function App() {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
+    <Container maxWidth="xl" sx={{ py: 4, mx: 'auto', width: '100%' }}>
       <Typography variant="h3" component="h1" gutterBottom align="center">
         Cleaner Pension Calculator
       </Typography>
@@ -249,14 +249,10 @@ function App() {
                     </TableCell>
                     <TableCell>{getMonthVisits(month)}</TableCell>
                     <TableCell align="right">
-                      {enabledMonths.has(month)
-                        ? contributions.employer.toFixed(2)
-                        : "0.00"}
+                      {contributions.employer.toFixed(2)}
                     </TableCell>
                     <TableCell align="right">
-                      {enabledMonths.has(month)
-                        ? contributions.employee.toFixed(2)
-                        : "0.00"}
+                      {contributions.employee.toFixed(2)}
                     </TableCell>
                     <TableCell align="center">
                       <IconButton
@@ -284,11 +280,11 @@ function App() {
               Employer Total Contribution
             </Typography>
             <Typography variant="h5" gutterBottom>
-              {history
-                .filter(
-                  (r) => r.year === selectedYear && enabledMonths.has(r.month)
-                )
-                .reduce((sum, r) => sum + r.employerContribution, 0)
+              {Array.from(enabledMonths)
+                .reduce((sum, month) => {
+                  const contributions = getMonthContributions(month);
+                  return sum + contributions.employer;
+                }, 0)
                 .toFixed(2)}{" "}
               ₪
             </Typography>
@@ -298,11 +294,25 @@ function App() {
               Employee Total Contribution
             </Typography>
             <Typography variant="h5" gutterBottom>
-              {history
-                .filter(
-                  (r) => r.year === selectedYear && enabledMonths.has(r.month)
-                )
-                .reduce((sum, r) => sum + r.employeeContribution, 0)
+              {Array.from(enabledMonths)
+                .reduce((sum, month) => {
+                  const contributions = getMonthContributions(month);
+                  return sum + contributions.employee;
+                }, 0)
+                .toFixed(2)}{" "}
+              ₪
+            </Typography>
+          </Box>
+          <Box sx={{ mt: 3 }}>
+            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+              Total Contributions
+            </Typography>
+            <Typography variant="h5" gutterBottom>
+              {Array.from(enabledMonths)
+                .reduce((sum, month) => {
+                  const contributions = getMonthContributions(month);
+                  return sum + contributions.employer + contributions.employee;
+                }, 0)
                 .toFixed(2)}{" "}
               ₪
             </Typography>
