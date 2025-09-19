@@ -10,7 +10,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  TableFooter,
   Select,
   MenuItem,
   IconButton,
@@ -19,6 +18,8 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Checkbox,
+  FormControlLabel,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 
@@ -92,6 +93,7 @@ function App() {
   );
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingMonth, setEditingMonth] = useState<number | null>(null);
+  const [enabledMonths, setEnabledMonths] = useState<Set<number>>(new Set());
   const BASE_PAYMENT = 260;
   const PENSION_RATE = 0.125;
   const BENEFITS_RATE = 0.06;
@@ -153,34 +155,68 @@ function App() {
   };
 
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
+    <Container maxWidth="xl" sx={{ py: 4 }}>
       <Typography variant="h3" component="h1" gutterBottom align="center">
         Cleaner Pension Calculator
       </Typography>
 
-      <Paper elevation={3} sx={{ p: 3 }}>
-        <Box sx={{ mb: 2, display: "flex", gap: 2, alignItems: "center" }}>
-          <Typography variant="h6">Monthly Overview</Typography>
-          <Select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(e.target.value as number)}
-            size="small"
-          >
-            {Array.from({ length: 5 }, (_, i) => {
-              const year = new Date().getFullYear() - i;
-              return (
-                <MenuItem key={year} value={year}>
-                  {year}
-                </MenuItem>
-              );
-            })}
-          </Select>
+      <Box sx={{ display: 'flex', gap: 3, alignItems: 'flex-start' }}>
+        <Paper elevation={3} sx={{ p: 3, flex: 1 }}>
+        <Box
+          sx={{
+            mb: 2,
+            display: "flex",
+            gap: 2,
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+            <Typography variant="h6">Monthly Overview</Typography>
+            <Select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value as number)}
+              size="small"
+            >
+              {Array.from({ length: 5 }, (_, i) => {
+                const year = new Date().getFullYear() - i;
+                return (
+                  <MenuItem key={year} value={year}>
+                    {year}
+                  </MenuItem>
+                );
+              })}
+            </Select>
+          </Box>
+          <Box>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={enabledMonths.size === 12}
+                  indeterminate={
+                    enabledMonths.size > 0 && enabledMonths.size < 12
+                  }
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setEnabledMonths(
+                        new Set(Array.from({ length: 12 }, (_, i) => i))
+                      );
+                    } else {
+                      setEnabledMonths(new Set());
+                    }
+                  }}
+                />
+              }
+              label="Select All Months"
+            />
+          </Box>
         </Box>
         <TableContainer>
           <Table>
             <TableHead>
               <TableRow>
                 <TableCell>Month</TableCell>
+                <TableCell>Include</TableCell>
                 <TableCell>Visits</TableCell>
                 <TableCell align="right">Employer Share (₪)</TableCell>
                 <TableCell align="right">Employee Share (₪)</TableCell>
@@ -197,12 +233,30 @@ function App() {
                         month: "long",
                       })}
                     </TableCell>
+                    <TableCell>
+                      <Checkbox
+                        checked={enabledMonths.has(month)}
+                        onChange={(e) => {
+                          const newEnabledMonths = new Set(enabledMonths);
+                          if (e.target.checked) {
+                            newEnabledMonths.add(month);
+                          } else {
+                            newEnabledMonths.delete(month);
+                          }
+                          setEnabledMonths(newEnabledMonths);
+                        }}
+                      />
+                    </TableCell>
                     <TableCell>{getMonthVisits(month)}</TableCell>
                     <TableCell align="right">
-                      {contributions.employer.toFixed(2)}
+                      {enabledMonths.has(month)
+                        ? contributions.employer.toFixed(2)
+                        : "0.00"}
                     </TableCell>
                     <TableCell align="right">
-                      {contributions.employee.toFixed(2)}
+                      {enabledMonths.has(month)
+                        ? contributions.employee.toFixed(2)
+                        : "0.00"}
                     </TableCell>
                     <TableCell align="center">
                       <IconButton
@@ -217,37 +271,52 @@ function App() {
                 );
               })}
             </TableBody>
-            <TableFooter>
-              <TableRow>
-                <TableCell colSpan={2}>
-                  <Typography variant="subtitle1" fontWeight="bold">
-                    Total:
-                  </Typography>
-                </TableCell>
-                <TableCell align="right">
-                  <Typography variant="subtitle1" fontWeight="bold">
-                    {history
-                      .filter((r) => r.year === selectedYear)
-                      .reduce((sum, r) => sum + r.employerContribution, 0)
-                      .toFixed(2)}{" "}
-                    ₪
-                  </Typography>
-                </TableCell>
-                <TableCell align="right">
-                  <Typography variant="subtitle1" fontWeight="bold">
-                    {history
-                      .filter((r) => r.year === selectedYear)
-                      .reduce((sum, r) => sum + r.employeeContribution, 0)
-                      .toFixed(2)}{" "}
-                    ₪
-                  </Typography>
-                </TableCell>
-                <TableCell />
-              </TableRow>
-            </TableFooter>
           </Table>
         </TableContainer>
       </Paper>
+
+        <Paper elevation={3} sx={{ p: 3, minWidth: 300 }}>
+          <Typography variant="h6" gutterBottom>
+            Summary for {selectedYear}
+          </Typography>
+          <Box sx={{ mt: 3 }}>
+            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+              Employer Total Contribution
+            </Typography>
+            <Typography variant="h5" gutterBottom>
+              {history
+                .filter(
+                  (r) => r.year === selectedYear && enabledMonths.has(r.month)
+                )
+                .reduce((sum, r) => sum + r.employerContribution, 0)
+                .toFixed(2)}{" "}
+              ₪
+            </Typography>
+          </Box>
+          <Box sx={{ mt: 3 }}>
+            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+              Employee Total Contribution
+            </Typography>
+            <Typography variant="h5" gutterBottom>
+              {history
+                .filter(
+                  (r) => r.year === selectedYear && enabledMonths.has(r.month)
+                )
+                .reduce((sum, r) => sum + r.employeeContribution, 0)
+                .toFixed(2)}{" "}
+              ₪
+            </Typography>
+          </Box>
+          <Box sx={{ mt: 3 }}>
+            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+              Months Included
+            </Typography>
+            <Typography variant="h5">
+              {enabledMonths.size} / 12
+            </Typography>
+          </Box>
+        </Paper>
+      </Box>
 
       <EditModal
         open={editModalOpen}
