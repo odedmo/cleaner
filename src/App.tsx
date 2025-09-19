@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Layout } from "./components/Layout";
 import { MonthlyOverview } from "./components/MonthlyOverview";
 import { Summary } from "./components/Summary";
 import { EditModal } from "./components/EditModal";
+import { supabase } from "./lib/supabase";
+import type { DbHistoryRecord } from "./lib/supabase";
 
 type HistoryRecord = {
   id: string;
@@ -23,6 +25,35 @@ function App() {
   const [editingMonth, setEditingMonth] = useState<number | null>(null);
   const [enabledMonths, setEnabledMonths] = useState<Set<number>>(new Set());
 
+  const fetchHistory = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("history")
+      .select("*")
+      .eq("year", selectedYear)
+      .order("date_added", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching history:", error);
+      return;
+    }
+
+    setHistory(
+      data.map((record: DbHistoryRecord) => ({
+        id: record.id,
+        year: record.year,
+        month: record.month,
+        visits: record.visits,
+        employerContribution: record.employer_contribution,
+        employeeContribution: record.employee_contribution,
+        dateAdded: record.date_added,
+      }))
+    );
+  }, [selectedYear]);
+
+  useEffect(() => {
+    fetchHistory();
+  }, [selectedYear, fetchHistory]);
+
   const BASE_PAYMENT = 260;
   const PENSION_RATE = 0.125;
   const BENEFITS_RATE = 0.06;
@@ -38,21 +69,52 @@ function App() {
     return sharePerVisit * visitsCount;
   };
 
-  const handleSave = (month: number, visits: number) => {
+  const handleSave = async (month: number, visits: number) => {
     const employerContribution = calculateMonthlyPension(visits);
     const employeeContribution = calculateCleanerShare(visits);
 
-    const record: HistoryRecord = {
-      id: crypto.randomUUID(),
+    // Find existing record for this month and year
+    const { data: existingRecords } = await supabase
+      .from("history")
+      .select("*")
+      .eq("year", selectedYear)
+      .eq("month", month);
+
+    const newRecord = {
       year: selectedYear,
       month,
       visits,
-      employerContribution,
-      employeeContribution,
-      dateAdded: new Date().toISOString(),
+      employer_contribution: employerContribution,
+      employee_contribution: employeeContribution,
+      date_added: new Date().toISOString(),
     };
 
-    setHistory((prev) => [...prev, record]);
+    let error;
+
+    if (existingRecords && existingRecords.length > 0) {
+      // Update the existing record
+      const { error: updateError } = await supabase
+        .from("history")
+        .update(newRecord)
+        .eq("id", existingRecords[0].id);
+
+      error = updateError;
+    } else {
+      // Insert new record
+      const { error: insertError } = await supabase.from("history").insert({
+        ...newRecord,
+        id: crypto.randomUUID(),
+      });
+
+      error = insertError;
+    }
+
+    if (error) {
+      console.error("Error saving record:", error);
+      return;
+    }
+
+    await fetchHistory();
   };
 
   const getMonthVisits = (month: number): number => {
