@@ -9,6 +9,12 @@ const FlexBox = styled("div")`
   display: flex;
   gap: 24px;
   align-items: flex-start;
+
+  @media (max-width: 995px) {
+    flex-direction: column;
+    gap: 16px;
+    align-items: center;
+  }
 `;
 
 interface LayoutProps {
