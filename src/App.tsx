@@ -153,7 +153,16 @@ function App() {
   };
 
   return (
-    <Layout title="Cleaner Pension Calculator">
+    <Layout
+      title="Cleaner Pension Calculator"
+      summary={
+        <Summary
+          year={selectedYear}
+          enabledMonths={enabledMonths}
+          contributions={yearData}
+        />
+      }
+    >
       <MonthlyOverview
         year={selectedYear}
         onYearChange={setSelectedYear}
@@ -161,11 +170,6 @@ function App() {
         onEnabledMonthsChange={setEnabledMonths}
         contributions={yearData}
         onEditMonth={handleEditMonth}
-      />
-      <Summary
-        year={selectedYear}
-        enabledMonths={enabledMonths}
-        contributions={yearData}
       />
       <EditModal
         open={editModalOpen}
