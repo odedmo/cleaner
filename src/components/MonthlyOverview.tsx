@@ -16,11 +16,15 @@ import {
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import EditIcon from "@mui/icons-material/Edit";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import { useTheme } from "@mui/material/styles";
 
-const MainPaper = styled(Paper)`
-  padding: 24px;
-  flex: 1;
-`;
+const MainPaper = styled(Paper)<{ $isSmall?: boolean }>(
+  ({ theme, $isSmall }) => ({
+    padding: $isSmall ? theme.spacing(1) : theme.spacing(3),
+    flex: 1,
+  })
+);
 
 const HeaderBox = styled(Box)`
   margin-bottom: 16px;
@@ -57,8 +61,11 @@ export function MonthlyOverview({
   contributions,
   onEditMonth,
 }: MonthlyOverviewProps) {
+  const theme = useTheme();
+  const isSmall = useMediaQuery(theme.breakpoints.down("sm"));
+
   return (
-    <MainPaper elevation={3}>
+    <MainPaper elevation={3} $isSmall={isSmall}>
       <HeaderBox>
         <YearSelectBox>
           <Typography variant="h6">Monthly Overview</Typography>
@@ -107,8 +114,12 @@ export function MonthlyOverview({
               <TableCell>Month</TableCell>
               <TableCell>Include</TableCell>
               <TableCell>Visits</TableCell>
-              <TableCell align="right">Employer Share (₪)</TableCell>
-              <TableCell align="right">Employee Share (₪)</TableCell>
+              {!isSmall && (
+                <TableCell align="right">Employer Share (₪)</TableCell>
+              )}
+              {!isSmall && (
+                <TableCell align="right">Employee Share (₪)</TableCell>
+              )}
               <TableCell align="center">Actions</TableCell>
             </TableRow>
           </TableHead>
@@ -141,12 +152,17 @@ export function MonthlyOverview({
                     />
                   </TableCell>
                   <TableCell>{contribution.visits}</TableCell>
-                  <TableCell align="right">
-                    {contribution.employer.toFixed(2)}
-                  </TableCell>
-                  <TableCell align="right">
-                    {contribution.employee.toFixed(2)}
-                  </TableCell>
+                  {!isSmall && (
+                    <TableCell align="right">
+                      {contribution.employer.toFixed(2)}
+                    </TableCell>
+                  )}
+                  {!isSmall && (
+                    <TableCell align="right">
+                      {contribution.employee.toFixed(2)}
+                    </TableCell>
+                  )}
+
                   <TableCell align="center">
                     <IconButton
                       color="primary"
