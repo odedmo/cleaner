@@ -120,7 +120,7 @@ export function MonthlyOverview({
               {!isSmall && (
                 <TableCell align="right">Employee Share (₪)</TableCell>
               )}
-              <TableCell align="center">Actions</TableCell>
+              <TableCell align="center">{!isSmall ? "Actions" : ""}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
