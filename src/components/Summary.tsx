@@ -3,7 +3,6 @@ import { styled } from "@mui/material/styles";
 
 const SummaryPaper = styled(Paper)`
   padding: 24px;
-  min-width: 300px;
 `;
 
 const SummarySection = styled(Box)`
